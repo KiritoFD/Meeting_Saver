@@ -1,0 +1,2 @@
+# Meeting_Scene_Saver
+ VideoConferenceSceneKeeper 是一个利用人工智能技术实时去除视频会议背景中非预期物体的软件，旨在提升正式场合的会议质量和专业性。
