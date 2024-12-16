@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Model with OpenPose</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://threejs.org/build/three.js"></script>
+    <script>
+        // 创建场景、相机和渲染器
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 添加光源
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(0, 1, 1).normalize();
+        scene.add(light);
+
+        // 加载背景图像
+        const backgroundTexture = new THREE.TextureLoader().load('path/to/your/background.jpg');
+        scene.background = backgroundTexture;
+
+        // 创建一个简单的立方体作为示例模型
+        const geometry = new THREE.BoxGeometry();
+        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+
+        // 设置相机位置
+        camera.position.z = 5;
+
+        // 更新模型位置的函数
+        function updateModelWithPose(pose) {
+            if (pose && pose.length > 0) {
+                // 假设使用第一个人的第一个关键点来更新立方体位置
+                const keypoint = pose[0][0]; // 第一个关键点
+                cube.position.x = keypoint[0]; // 更新X坐标
+                cube.position.y = keypoint[1]; // 更新Y坐标
+            }
+        }
+
+        // 渲染循环
+        async function animate() {
+            requestAnimationFrame(animate);
+            // 获取OpenPose输出
+            const response = await fetch('/pose');
+            const openPoseOutput = await response.json();
+            updateModelWithPose(openPoseOutput); // 更新模型位置
+            cube.rotation.x += 0.01; // 旋转立方体
+            cube.rotation.y += 0.01;
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>
