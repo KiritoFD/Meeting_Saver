@@ -6,8 +6,8 @@
 
 - **实时异物移除**：利用最新的机器学习算法，自动识别并移除视频中的干扰物体。
 比如你在接受面试或采访的时候猫跑进了画面 ,like:
-https://www.sohu.com/a/433753819_639927
- emm,that's a disaster,but this tool will solve it.
+  https://www.sohu.com/a/433753819_639927
+  emm,that's a disaster,but this tool will solve it.
 - **背景控制**：提供虚拟背景功能，增强会议的专业感。
 - **场景保护**：确保会议过程中的背景一致性，避免不必要的视觉干扰。
 - **视觉清晰度**：优化视频流，提高画面质量，使与会者更加突出。
