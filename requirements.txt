@@ -1,11 +1,8 @@
+cmake>=3.26.0
 flask>=2.0.0
 flask-cors>=3.0.0
-opencv-python>=4.5.0
+mediapipe-cpu==0.10.0
 numpy>=1.19.0
+opencv-python>=4.5.0
 pyyaml>=5.4.0
 requests>=2.26.0
-mediapipe-cpu==0.10.0
-
-# 开发依赖
-pytest>=6.0.0
-flake8>=3.9.0

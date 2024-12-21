@@ -1,149 +1,60 @@
-# Meeting Saver
+# Meeting Scene Saver: 基于 MediaPipe 的实时人体姿态估计与异物消除系统
 
+本项目是一个基于 **MediaPipe** 的实时人体姿态估计与异物消除系统，旨在通过提取人体姿态模型并重新渲染的方式，有效去除视频或图像中干扰人体姿态识别的异物，提升姿态估计的准确性和鲁棒性（这个抽象的词）。 这对于需要精确人体姿态信息的应用场景，例如虚拟会议、远程医疗和动作捕捉等，具有重要的实用价值。
 这是一个创新的视频会议解决方案，旨在为正式场合提供无干扰的交流环境。该工具通过先进的计算机视觉技术，实时检测并去除视频中的非预期物体，如宠物、杂物等，确保会议的专业性与专注度，同时减少数据传输压力。
 
-## 目录
-- [特点](#特点)
-- [项目结构](#项目结构)
-- [快速开始](#快速开始)
-- [详细文档](#详细文档)
-- [开发指南](#开发指南)
-- [贡献指南](#贡献指南)
-- [许可证](#许可证)
-
-## 特点
-
-- **实时异物移除**：利用最新的机器学习算法，自动识别并移除视频中的干扰物体
-- **背景控制**：提供虚拟背景功能，增强会议的专业感
-- **场景保护**：确保会议过程中的背景一致性，避免不必要的视觉干扰
-- **视觉清晰度**：优化视频流，提高画面质量，使与会者更加突出
-- **减少数据传输压力**：通过高效的视频处理算法，降低带宽需求
-- **用户友好**：简单易用的界面，无需复杂设置
-
-## 项目结构
-
-```
-meeting-saver/
-├── src/                      # 源代码目录
-│   ├── api/                  # API接口
-│   ├── core/                 # 核心功能模块
-│   └── utils/                # 工具函数
-├── static/                   # 静态资源
-├── templates/                # HTML模板
-├── tests/                    # 测试文件
-└── docs/                     # 文档
-```
 
 ## 快速开始
 
-### 使用 Docker（推荐）
+### 1. 安装依赖
+提示：要使用mediapipe,应使用python3.10
 
-```bash
-# 克隆项目
-git clone https://github.com/your-username/meeting-saver.git
-cd meeting-saver
+         pip install -r requirements.txt
+### 2. 运行
+          py run.py
 
-# 使用 Docker Compose 启动
-docker-compose up -d
-```
+程序运行后，打开浏览器访问 `http://127.0.0.1:5000/`。
 
-### 手动安装
+## 功能
 
-1. **环境准备**
-```bash
-# 创建虚拟环境
-python -m venv venv
-source venv/bin/activate  # Linux/MacOS
-# 或
-.\venv\Scripts\activate  # Windows
+*   **实时人体姿态估计**: 使用 MediaPipe 实时、准确地捕捉人体姿态。
+*   **智能异物消除**: 通过模型提取和重建，自动去除背景和干扰人体姿态识别的异物。
+*   **背景替换**: 支持上传自定义背景图片，并将处理后的姿态模型渲染到新的背景上。
+*   **摄像头/视频流支持**: 支持摄像头实时捕捉和视频文件导入。
+*   **用户友好界面**: 提供直观的界面，方便用户操作和查看结果。
 
-# 安装依赖
-pip install -r requirements.txt
-```
+## 技术方案
 
-2. **配置**
-```bash
-# 复制配置文件
-cp config.example.yml config.yml
+*   **姿态估计**: MediaPipe Pose
+*   **图像处理**: OpenCV
+*   **3D 模型渲染**: Three.js (或其他合适的 3D 渲染库)
+*   **后端**: Flask
 
-# 编辑配置
-vim config.yml
-```
+## 目录说明
 
-3. **运行**
-```bash
-python run.py
-```
+*   `capture.py`: 处理摄像头/视频帧，进行姿态估计。
+*   `run.py`: 程序入口文件。
+*   `src/`: 源代码目录。
+    *   `core/`: 核心业务逻辑。
+        *   `__init__.py`: 初始化文件。
+        *   `video_processor.py`: 视频处理和姿态估计的核心逻辑。
+    *   `server.py`: Flask 应用，处理 HTTP 请求和响应。
+    *   `static/`: 前端静态资源 (如果存在)。
+    *   `templates/`: HTML 模板。
+        *   `display.html`: 前端页面，包含 3D 模型渲染和用户交互逻辑。
+    *   `utils/`: 工具函数。
+        *   `__init__.py`: 初始化文件。
+        *   `logger.py`: 日志配置。
+*   `templates/`: HTML 模板。
+    *   `display.html`: 前端页面，包含 3D 模型渲染和用户交互逻辑。
 
-## 详细文档
+## 未来改进
 
-- [安装指南](docs/installation.md)
-- [配置说明](docs/configuration.md)
-- [API文档](docs/api.md)
-- [常见问题](docs/faq.md)
-
-## 开发指南
-
-### 开发环境设置
-
-```bash
-# 安装开发依赖
-pip install -r requirements-dev.txt
-
-# 运行测试
-pytest
-
-# 代码风格检查
-flake8
-```
-
-### 目录说明
-
-- `src/api/`: REST API接口
-- `src/core/`: 核心业务逻辑
-- `src/utils/`: 通用工具函数
-- `static/`: 前端静态资源
-- `templates/`: HTML模板
-- `tests/`: 单元测试和集成测试
-
-## 贡献指南
-
-1. Fork 项目
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 提交 Pull Request
+*   优化算法，提高处理速度和准确性。
+*   支持更多类型的异物消除。
+*   增加对不同分辨率和帧率的支持。
+*   开发移动端应用。
 
 ## 许可证
 
-本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
-
-## 安装指南
-
-### 安装 OpenPose
-
-1. **自动安装（推荐）**：
-```bash
-python scripts/install_openpose.py
-```
-安装过程中可以选择：
-- 立即下载预训练模型（需要良好的网络连接）
-- 稍后手动下载模型
-
-2. **手动下载模型（如果需要）**：
-从以下地址下载模型文件：
-- [body_25 模型](http://posefs1.perception.cs.cmu.edu/OpenPose/models/pose/body_25/pose_iter_584000.caffemodel)
-- [coco 模型](http://posefs1.perception.cs.cmu.edu/OpenPose/models/pose/coco/pose_iter_440000.caffemodel)
-- [mpi 模型](http://posefs1.perception.cs.cmu.edu/OpenPose/models/pose/mpi/pose_iter_160000.caffemodel)
-
-下载后将文件放置在对应目录：
-```
-openpose/models/pose/body_25/pose_iter.caffemodel
-openpose/models/pose/coco/pose_iter.caffemodel
-openpose/models/pose/mpi/pose_iter.caffemodel
-```
-
-3. **验证安装**：
-```bash
-python tests/test_openpose.py
-```
+本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件 (您需要创建 LICENSE 文件并添加 MIT 许可证内容)。
