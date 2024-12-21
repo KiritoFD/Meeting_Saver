@@ -3,31 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meeting Saver</title>
+    <title>Meeting Scene Saver</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f4f4;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f0f2f5; /* B站浅灰色背景 */
             margin: 0;
             padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start; /* 将内容对齐到顶部 */
-            min-height: 100vh;
+            color: #222;
+        }
+
+        header {
+            background-color: #fff;
+            padding: 15px 20px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            text-align: center;
+            margin-bottom: 20px;
         }
 
         h1 {
-            color: #333;
-            margin-bottom: 20px;
+            color: #00aeec; /* B站主色调 */
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
         }
 
-        #preview-container {
+        main {
+            display: flex;
+            width: 95%;
+            max-width: 1200px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .left-panel {
+            flex: 2;
+            padding-right: 20px;
+            border-right: 1px solid #eee;
+        }
+
+        .right-panel {
+            flex: 1;
+            padding-left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .video-container {
             position: relative;
-            width: 640px;
-            height: 480px;
-            border: 1px solid #ccc;
-            margin-bottom: 20px;
+            width: 100%;
+            padding-top: 75%; /* 保持 4:3 宽高比 */
+            overflow: hidden;
+            background-color: #000;
+            border-radius: 8px;
         }
 
         #preview {
@@ -47,24 +82,39 @@
             height: 100%;
         }
 
+        .controls-group {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+
+        .controls-group h3 {
+            margin-top: 0;
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
         .button-group {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         button {
-            background-color: #007bff;
-            color: #fff;
+            padding: 10px 15px;
             border: none;
-            padding: 10px 20px;
             border-radius: 5px;
+            background-color: #00aeec; /* B站主色调 */
+            color: white;
             cursor: pointer;
+            font-size: 16px;
             transition: background-color 0.3s ease;
         }
 
         button:hover {
-            background-color: #0056b3;
+            background-color: #008abe;
         }
 
         .upload-btn-wrapper {
@@ -73,42 +123,70 @@
             display: inline-block;
         }
 
-        .btn {
-            border: 2px solid gray;
-            color: gray;
+        .upload-btn {
+            border: 2px solid #00aeec;
+            color: #00aeec;
             background-color: white;
-            padding: 8px 20px;
+            padding: 10px 15px;
             border-radius: 5px;
-            font-size: 1em;
+            font-size: 16px;
+            font-weight: bold;
             cursor: pointer;
         }
 
-        .upload-btn-wrapper input[type=file] {
+        .upload-btn-wrapper input[type="file"] {
             font-size: 100px;
             position: absolute;
             left: 0;
             top: 0;
             opacity: 0;
         }
+
+        /* 响应式布局 */
+        @media (max-width: 768px) {
+            main {
+                flex-direction: column;
+            }
+            .left-panel {
+                padding-right: 0;
+                border-right: none;
+                margin-bottom: 20px;
+            }
+            .right-panel {
+                padding-left: 0;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>Meeting Saver</h1>
+    <header>
+        <h1>Meeting Scene Saver</h1>
+    </header>
+    <main>
+        <div class="left-panel">
+            <div class="video-container">
+                <img id="preview" src="/video_feed" alt="Camera Preview" style="display: none;">
+                <div id="canvas-container"></div>
+            </div>
+        </div>
+        <div class="right-panel">
+            <div class="controls-group">
+                <h3>摄像头控制</h3>
+                <div class="button-group">
+                    <button onclick="startCapture()">启动摄像头</button>
+                    <button onclick="togglePreview()">显示/隐藏预览</button>
+                </div>
+            </div>
 
-    <div class="button-group">
-        <button onclick="startCapture()">启动摄像头</button>
-        <button onclick="togglePreview()">显示/隐藏预览</button>
-    </div>
-
-    <div id="preview-container">
-        <img id="preview" src="/video_feed" alt="Camera Preview" style="display: none;">
-        <div id="canvas-container"></div>
-    </div>
-
-    <div class="upload-btn-wrapper">
-        <button class="btn">上传背景</button>
-        <input type="file" id="backgroundUpload" name="background" accept="image/*" />
-    </div>
+            <div class="controls-group">
+                <h3>背景设置</h3>
+                <div class="upload-btn-wrapper">
+                    <button class="upload-btn">上传背景</button>
+                    <input type="file" id="backgroundUpload" name="background" accept="image/*">
+                </div>
+            </div>
+        </div>
+    </main>
 
     <script src="https://threejs.org/build/three.js"></script>
     <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
@@ -123,63 +201,40 @@
             renderer.setSize(640, 480);
             document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-            camera.position.set(0, 0, 3);
+            camera.position.set(0, 1, 5);
             controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
 
-            // 创建骨骼
-            skeleton = new THREE.Group();
-            scene.add(skeleton);
-
-            // 添加光源
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
             scene.add(ambientLight);
 
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-            directionalLight.position.set(1, 1, 1);
+            directionalLight.position.set(5, 5, 5);
             scene.add(directionalLight);
+
+            skeleton = new THREE.Group();
+            scene.add(skeleton);
         }
 
-        function updateModelWithPose(poseData) {
-            skeleton.children = []; // 清空之前的骨骼
+        function updateModelWithPose(keypoints) {
+            skeleton.children = [];
 
-            if (poseData && poseData.length > 0) {
-                const keypoints = poseData;
-                const joints = [];
+            if (keypoints && keypoints.length > 0) {
+                const joints = keypoints.map(kp => new THREE.Vector3(kp[0] - 0.5, 0.5 - kp[1], 0));
 
-                // 创建关节点
-                for (let i = 0; i < keypoints.length; i++) {
-                    const keypoint = keypoints[i];
-                    if (keypoint[3] > 0.3){
-                        const x = (keypoint[0] - 0.5) * 6.4;
-                        const y = -(keypoint[1] - 0.5) * 4.8;
-                        const z = 0;
-
-                        const geometry = new THREE.SphereGeometry(0.05, 32, 32);
-                        const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-                        const joint = new THREE.Mesh(geometry, material);
-                        joint.position.set(x, y, z);
-                        skeleton.add(joint);
-                        joints.push(joint.position);
-                    }
-                }
-
-                // 创建连接线
+                // 连接骨骼 (示例，根据您的 MediaPipe 输出调整)
                 const connections = [
-                    [0, 1], [1, 2], [2, 3], // 左眼
-                    [0, 4], [4, 5], [5, 6], // 右眼
-                    [0, 9], [0, 10], // 嘴巴
-                    [7, 8], // 耳朵
-                    [11, 12], // 肩膀
-                    [12, 14], [14, 16], [14, 18], [14, 20], // 右臂
-                    [11, 13], [13, 15], [13, 17], [13, 19] // 左臂
+                    [0, 1], [1, 2], [2, 3], [3, 4], // 示例连接
+                    [5, 6], [6, 7], [7, 8], // 示例连接
+                    [9, 10], [11, 12]  // 更多示例连接
                 ];
 
-                for (let connection of connections) {
+                for (const connection of connections) {
                     const start = joints[connection[0]];
                     const end = joints[connection[1]];
-
                     if (start && end) {
-                        const material = new THREE.LineBasicMaterial({ color: 0x00ff00 });
+                        const material = new THREE.LineBasicMaterial({ color: 0x00aeec }); // B站蓝色
                         const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
                         const line = new THREE.Line(geometry, material);
                         skeleton.add(line);
@@ -278,9 +333,6 @@
         };
 
         // 页面关闭时清理资源
-        window.addEventListener('beforeunload', () => {
-            clearInterval(previewInterval);
-        });
     </script>
 </body>
 </html>
