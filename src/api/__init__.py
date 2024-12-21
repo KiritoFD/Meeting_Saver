@@ -1,3 +1,4 @@
+# src/api/__init__.py
 """
 API模块
 提供REST API接口

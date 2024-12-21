@@ -7,7 +7,7 @@ TODO: 实现以下测试用例
 """
 
 import pytest
-from src.core.processor import VideoProcessor
+from src.core.video_processor import VideoProcessor
 
 def test_processor_init():
     """测试处理器初始化"""

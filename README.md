@@ -117,3 +117,33 @@ flake8
 ## 许可证
 
 本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
+
+## 安装指南
+
+### 安装 OpenPose
+
+1. **自动安装（推荐）**：
+```bash
+python scripts/install_openpose.py
+```
+安装过程中可以选择：
+- 立即下载预训练模型（需要良好的网络连接）
+- 稍后手动下载模型
+
+2. **手动下载模型（如果需要）**：
+从以下地址下载模型文件：
+- [body_25 模型](http://posefs1.perception.cs.cmu.edu/OpenPose/models/pose/body_25/pose_iter_584000.caffemodel)
+- [coco 模型](http://posefs1.perception.cs.cmu.edu/OpenPose/models/pose/coco/pose_iter_440000.caffemodel)
+- [mpi 模型](http://posefs1.perception.cs.cmu.edu/OpenPose/models/pose/mpi/pose_iter_160000.caffemodel)
+
+下载后将文件放置在对应目录：
+```
+openpose/models/pose/body_25/pose_iter.caffemodel
+openpose/models/pose/coco/pose_iter.caffemodel
+openpose/models/pose/mpi/pose_iter.caffemodel
+```
+
+3. **验证安装**：
+```bash
+python tests/test_openpose.py
+```

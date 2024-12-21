@@ -46,6 +46,10 @@ static/img/uploads/
 # OpenPose
 models/
 openpose/
+build/
+*.dll
+*.so
+*.pyd
 
 # OS
 .DS_Store
