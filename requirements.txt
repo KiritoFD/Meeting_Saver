@@ -6,3 +6,4 @@ Werkzeug>=2.0.1
 pillow>=8.3.2
 flask-cors>=3.0.10
 python-dotenv>=0.19.0
+scipy>=1.7.0

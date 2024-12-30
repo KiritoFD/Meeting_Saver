@@ -4,6 +4,8 @@ import numpy as np
 import mediapipe as mp
 import os
 from werkzeug.utils import secure_filename
+import time
+import logging
 
 # 获取项目根目录的绝对路径
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -38,34 +40,72 @@ pose = mp_pose.Pose(
 
 # 全局变量
 camera = None
-current_frame = None
-current_pose = None
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@app.route('/start_capture', methods=['POST'])
-def start_capture():
-    global camera
-    try:
-        if camera is None:
-            camera = cv2.VideoCapture(0)
-            if not camera.isOpened():
-                raise Exception("无法打开摄像头")
-        return jsonify({"message": "摄像头已启动"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/stop_capture', methods=['POST'])
-def stop_capture():
+def init_camera():
+    """简化的摄像头初始化"""
     global camera
     try:
         if camera is not None:
             camera.release()
-            camera = None
-        return jsonify({"message": "摄像头已关闭"}), 200
+            
+        camera = cv2.VideoCapture(0)
+        if not camera.isOpened():
+            return False
+            
+        return True
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"摄像头初始化错误: {str(e)}")
+        return False
+
+@app.route('/start_capture', methods=['POST'])
+def start_capture():
+    """简化的摄像头启动逻辑"""
+    global camera
+    
+    # 如果摄像头已经在运行，直接返回成功
+    if camera is not None and camera.isOpened():
+        return jsonify({"status": "success"}), 200
+        
+    # 尝试初始化摄像头
+    if init_camera():
+        return jsonify({"status": "success"}), 200
+    else:
+        return jsonify({"status": "error"}), 500
+
+@app.route('/camera_status')
+def camera_status():
+    """获取摄像头状态"""
+    global camera
+    
+    try:
+        is_running = False
+        if camera is not None:
+            # 只进行基本检查，不读取帧
+            is_running = camera.isOpened()
+            
+        return jsonify({
+            "isRunning": is_running,
+            "status": "running" if is_running else "stopped"
+        })
+    except Exception as e:
+        logger.error(f"检查摄像头状态时发生错误: {str(e)}")
+        return jsonify({
+            "isRunning": False,
+            "status": "error",
+            "error": str(e)
+        })
+
+@app.route('/stop_capture', methods=['POST'])
+def stop_capture():
+    """停止摄像头"""
+    global camera
+    if camera is not None:
+        camera.release()
+        camera = None
+    return jsonify({"status": "success"}), 200
 
 def generate_frames():
     global current_frame, current_pose
@@ -102,14 +142,50 @@ def generate_frames():
 
 @app.route('/video_feed')
 def video_feed():
-    return Response(generate_frames(),
+    """视频流处理"""
+    def generate():
+        global camera
+        while True:
+            if camera is None or not camera.isOpened():
+                if not init_camera():
+                    time.sleep(1)
+                    continue
+                    
+            success, frame = camera.read()
+            if not success:
+                continue
+                
+            ret, buffer = cv2.imencode('.jpg', frame)
+            if not ret:
+                continue
+                
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+                   
+    return Response(generate(),
                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/pose')
 def get_pose():
-    if current_pose is None:
-        return jsonify([])
-    return jsonify(current_pose)
+    if not video_processor.should_send_update():
+        return jsonify({"status": "no_update"})
+        
+    try:
+        # 获取最小必要的关键点
+        minimal_points = video_processor.get_minimal_keypoints()
+        
+        # 编码数据
+        encoded_data = MinimalEncoder.encode_points(minimal_points)
+        
+        # 计算数据大小
+        data_size = len(encoded_data)
+        video_processor.bandwidth_monitor.add_data_point(data_size)
+        
+        return Response(encoded_data, mimetype='application/octet-stream')
+        
+    except Exception as e:
+        logger.error(f"处理姿态数据时出错: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/upload_model', methods=['POST'])
 def upload_model():
@@ -154,6 +230,95 @@ def serve_background(filename):
 @app.route('/')
 def index():
     return render_template('display.html')
+
+@app.route('/bandwidth_status')
+def bandwidth_status():
+    """获取当前带宽状态"""
+    try:
+        current_bandwidth = video_processor.bandwidth_monitor.get_bandwidth()
+        current_fps = video_processor.current_fps
+        points_count = len(video_processor.last_keypoints) if video_processor.last_keypoints else 0
+        
+        # 添加详细日志
+        logger.info(f"带宽状态 - 带宽: {current_bandwidth/1000:.2f}Kbps, FPS: {current_fps}, 点数: {points_count}")
+        
+        response_data = {
+            'current_bandwidth': float(current_bandwidth),  # 确保数据类型正确
+            'current_fps': int(current_fps),
+            'points_count': points_count,
+            'status': 'success'
+        }
+        
+        return jsonify(response_data)
+    except Exception as e:
+        logger.error(f"获取带宽状态失败: {str(e)}")
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 500
+
+@app.route('/set_bandwidth_limit', methods=['POST'])
+def set_bandwidth_limit():
+    """设置带宽限制"""
+    try:
+        data = request.json
+        limit = data.get('limit', 4000)  # 默认4Kbps
+        
+        # 更新视频处理器的带宽限制
+        video_processor.max_bandwidth = limit
+        video_processor.min_bandwidth = min(2000, limit)  # 确保最小带宽不超过限制
+        
+        # 立即调整帧率
+        current_bandwidth = video_processor.bandwidth_monitor.get_bandwidth()
+        video_processor.adaptive_frame_rate(current_bandwidth, 0)
+        
+        return jsonify({
+            'message': f'带宽限制已设置为 {limit} bps',
+            'status': 'success'
+        })
+    except Exception as e:
+        logger.error(f"设置带宽限制失败: {str(e)}")
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 500
+
+@app.route('/satellite_status')
+def satellite_status():
+    """获取卫星链路状态"""
+    try:
+        status = video_processor.satellite_adapter.get_link_status()
+        return jsonify({
+            'status': 'success',
+            'data': status
+        })
+    except Exception as e:
+        logger.error(f"获取卫星状态失败: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+@app.route('/emergency_mode', methods=['POST'])
+def toggle_emergency_mode():
+    """手动切换紧急模式"""
+    try:
+        data = request.json
+        if data.get('enable', False):
+            video_processor._enter_emergency_mode()
+        else:
+            video_processor._exit_emergency_mode()
+            
+        return jsonify({
+            'status': 'success',
+            'emergency_mode': video_processor.emergency_mode_active
+        })
+    except Exception as e:
+        logger.error(f"切换紧急模式失败: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
