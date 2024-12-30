@@ -135,29 +135,21 @@ class VideoProcessor:
         return compressed
 
     def process_frame(self, frame):
+        """处理视频帧并更新带宽统计"""
         try:
-            # 获取链路状态
-            link_status = self.satellite_adapter.get_link_status()
-            
-            # 检查是否需要进入紧急模式
-            if link_status['quality'] < 0.3 or link_status['bandwidth'] < 1500:
-                self._enter_emergency_mode()
-            elif self.emergency_mode_active and link_status['quality'] > 0.5:
-                self._exit_emergency_mode()
-            
             # 处理帧
-            compressed_data = self._compress_frame_adaptive(frame, link_status)
+            processed_data = self.compressor.compress(frame)
             
-            # 发送数据
-            if compressed_data:
-                priority = 0 if self._is_keyframe() else 1
-                self.satellite_adapter.send_data(compressed_data, priority)
-            
-            return frame, compressed_data
+            # 更新带宽统计
+            if processed_data:
+                data_size = len(processed_data)
+                bandwidth_monitor.update(data_size)
+                
+            return processed_data
             
         except Exception as e:
-            logger.error(f"处理帧时出错: {str(e)}")
-            return None, None
+            logger.error(f"帧处理错误: {str(e)}")
+            return None
 
     def _compress_frame_adaptive(self, frame, link_status):
         """自适应压缩"""

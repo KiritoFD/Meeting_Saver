@@ -6,6 +6,7 @@ import os
 from werkzeug.utils import secure_filename
 import time
 import logging
+from collections import deque
 
 # 获取项目根目录的绝对路径
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -318,6 +319,86 @@ def toggle_emergency_mode():
         return jsonify({
             'status': 'error',
             'error': str(e)
+        }), 500
+
+class BandwidthMonitor:
+    def __init__(self):
+        self.bandwidth_history = deque(maxlen=30)  # 30秒历史数据
+        self.last_update = time.time()
+        self.last_bytes = 0
+        self.current_bandwidth = 0
+        self.frame_times = deque(maxlen=10)  # 用于计算fps
+        
+    def update(self, bytes_sent):
+        current_time = time.time()
+        time_diff = current_time - self.last_update
+        
+        if time_diff > 0:
+            # 计算当前带宽 (Kbps)
+            bandwidth = ((bytes_sent - self.last_bytes) * 8) / (time_diff * 1000)
+            self.current_bandwidth = bandwidth
+            self.bandwidth_history.append(bandwidth)
+            
+            # 更新fps计算
+            self.frame_times.append(current_time)
+            
+        self.last_update = current_time
+        self.last_bytes = bytes_sent
+        
+    def get_stats(self):
+        # 计算fps
+        if len(self.frame_times) >= 2:
+            time_diff = self.frame_times[-1] - self.frame_times[0]
+            fps = (len(self.frame_times) - 1) / time_diff if time_diff > 0 else 0
+        else:
+            fps = 0
+            
+        return {
+            'current': self.current_bandwidth,
+            'average': sum(self.bandwidth_history) / len(self.bandwidth_history) if self.bandwidth_history else 0,
+            'fps': fps
+        }
+
+# 全局带宽监控器
+bandwidth_monitor = BandwidthMonitor()
+
+@app.route('/bandwidth_stats')
+def get_bandwidth_stats():
+    """获取带宽统计数据"""
+    return jsonify(bandwidth_monitor.get_stats())
+
+@app.route('/start_bandwidth_test', methods=['POST'])
+def start_bandwidth_test():
+    """开始带宽测试"""
+    try:
+        data = request.json
+        limit = data.get('limit', 2000)  # 默认2Kbps
+        
+        # 配置压缩器的带宽限制
+        video_processor.compressor.set_bandwidth_limit(limit)
+        
+        # 进行30秒测试
+        test_start = time.time()
+        test_duration = 30
+        
+        while time.time() - test_start < test_duration:
+            current_stats = bandwidth_monitor.get_stats()
+            if current_stats['current'] > limit * 1.1:  # 允许10%的误差
+                return jsonify({
+                    'status': 'warning',
+                    'message': f'带宽超出限制: {current_stats["current"]:.2f}Kbps'
+                })
+            time.sleep(1)
+            
+        return jsonify({
+            'status': 'success',
+            'message': f'测试完成，平均带宽: {current_stats["average"]:.2f}Kbps'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
         }), 500
 
 if __name__ == '__main__':

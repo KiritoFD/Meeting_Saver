@@ -298,6 +298,55 @@
             height: 100%;
             object-fit: contain;
         }
+
+        .bandwidth-monitor {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            width: 300px;
+        }
+
+        .stat-item {
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .bandwidth-graph {
+            height: 150px;
+            margin-top: 15px;
+        }
+
+        .bandwidth-control {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        #testStatus {
+            margin-top: 10px;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        #testStatus.warning {
+            background: #ff9800;
+            color: white;
+        }
+
+        #testStatus.error {
+            background: #f44336;
+            color: white;
+        }
+
+        #testStatus.success {
+            background: #4caf50;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -383,6 +432,39 @@
                     </div>
                 </div>
             </div>
+
+            <div class="bandwidth-monitor">
+                <h3>带宽监控</h3>
+                <div class="stats">
+                    <div class="stat-item">
+                        <label>当前带宽:</label>
+                        <span id="currentBandwidth">0 Kbps</span>
+                    </div>
+                    <div class="stat-item">
+                        <label>平均带宽:</label>
+                        <span id="averageBandwidth">0 Kbps</span>
+                    </div>
+                    <div class="stat-item">
+                        <label>帧率:</label>
+                        <span id="currentFps">0 fps</span>
+                    </div>
+                    <div class="bandwidth-graph">
+                        <canvas id="bandwidthChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="bandwidth-control">
+                    <h4>带宽测试</h4>
+                    <select id="bandwidthTest">
+                        <option value="200">超低带宽 (0.2Kbps)</option>
+                        <option value="500">低带宽 (0.5Kbps)</option>
+                        <option value="1000">标准带宽 (1Kbps)</option>
+                        <option value="2000">高带宽 (2Kbps)</option>
+                    </select>
+                    <button onclick="startBandwidthTest()">开始测试</button>
+                    <div id="testStatus"></div>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -394,6 +476,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         let isVideoStarted = false;
 
@@ -573,6 +656,105 @@
             hideError();
             await startCamera();
         }
+
+        let bandwidthChart;
+        let bandwidthData = [];
+        const maxDataPoints = 30;
+
+        // 初始化图表
+        function initBandwidthChart() {
+            const ctx = document.getElementById('bandwidthChart').getContext('2d');
+            bandwidthChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array(maxDataPoints).fill(''),
+                    datasets: [{
+                        label: '带宽使用',
+                        data: Array(maxDataPoints).fill(0),
+                        borderColor: '#4CAF50',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            suggestedMax: 5
+                        }
+                    },
+                    animation: false
+                }
+            });
+        }
+
+        // 更新带宽数据
+        async function updateBandwidth() {
+            try {
+                const response = await fetch('/bandwidth_stats');
+                const data = await response.json();
+                
+                document.getElementById('currentBandwidth').textContent = 
+                    `${data.current.toFixed(2)} Kbps`;
+                document.getElementById('averageBandwidth').textContent = 
+                    `${data.average.toFixed(2)} Kbps`;
+                document.getElementById('currentFps').textContent = 
+                    `${data.fps.toFixed(1)} fps`;
+                    
+                // 更新图表
+                bandwidthData.push(data.current);
+                if (bandwidthData.length > maxDataPoints) {
+                    bandwidthData.shift();
+                }
+                
+                bandwidthChart.data.datasets[0].data = bandwidthData;
+                bandwidthChart.update();
+                
+            } catch (error) {
+                console.error('带宽数据更新失败:', error);
+            }
+        }
+
+        // 带宽测试
+        async function startBandwidthTest() {
+            const limit = document.getElementById('bandwidthTest').value;
+            const statusDiv = document.getElementById('testStatus');
+            
+            try {
+                statusDiv.className = '';
+                statusDiv.textContent = '测试中...';
+                
+                const response = await fetch('/start_bandwidth_test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ limit: parseInt(limit) })
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    statusDiv.className = 'success';
+                    statusDiv.textContent = '测试成功: ' + result.message;
+                } else {
+                    statusDiv.className = 'warning';
+                    statusDiv.textContent = '测试警告: ' + result.message;
+                }
+                
+            } catch (error) {
+                statusDiv.className = 'error';
+                statusDiv.textContent = '测试失败: ' + error.message;
+            }
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initBandwidthChart();
+            // 每秒更新带宽数据
+            setInterval(updateBandwidth, 1000);
+        });
     </script>
 </body>
 </html>
