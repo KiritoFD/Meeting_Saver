@@ -4,12 +4,14 @@ import zlib
 
 class EnhancedCompressor:
     def __init__(self):
-        # 关键点定义（按重要性排序）
+        # 更细粒度的关键点优先级
         self.keypoints_priority = {
-            'face': [0,1,2,3,4,5,6,7,8,9,10],  # 面部关键点
-            'upper_body': [11,12,13,14,23,24],  # 上身核心点
-            'hands': [15,16,17,18,19,20,21,22], # 手部关键点
-            'lower_body': [25,26,27,28,29,30,31,32] # 下身关键点
+            'face_core': [0,1,2,3,4],      # 核心面部特征
+            'face_detail': [5,6,7,8,9,10],  # 次要面部特征
+            'upper_core': [11,12],          # 核心上身点
+            'upper_detail': [13,14,23,24],  # 次要上身点
+            'hands': [15,16,17,18,19,20,21,22],
+            'lower_body': [25,26,27,28,29,30,31,32]
         }
         
         # 运动预测和状态追踪
@@ -20,10 +22,11 @@ class EnhancedCompressor:
         # 自适应参数
         self.bandwidth_budget = 0.2  # 初始带宽预算(Kbps)
         self.quality_levels = {
-            'ultra_low': {'precision': 4, 'keyframe_interval': 60},  # 0.1Kbps
-            'low': {'precision': 6, 'keyframe_interval': 45},        # 0.2Kbps
-            'medium': {'precision': 8, 'keyframe_interval': 30},     # 0.3Kbps
-            'high': {'precision': 10, 'keyframe_interval': 20}       # 0.4Kbps
+            'minimal': {'precision': 4, 'keyframe_interval': 60, 'points': ['face_core']},
+            'ultra_low': {'precision': 5, 'keyframe_interval': 45, 'points': ['face_core', 'upper_core']},
+            'low': {'precision': 6, 'keyframe_interval': 30, 'points': ['face_core', 'face_detail', 'upper_core']},
+            'medium': {'precision': 8, 'keyframe_interval': 20, 'points': ['face_core', 'face_detail', 'upper_core', 'upper_detail']},
+            'high': {'precision': 10, 'keyframe_interval': 15, 'points': ['face_core', 'face_detail', 'upper_core', 'upper_detail', 'hands']}
         }
         self.current_quality = 'low'
 
