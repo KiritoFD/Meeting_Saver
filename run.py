@@ -117,6 +117,26 @@ def get_pose():
         return jsonify([])
     return jsonify(current_pose)
 
+def restart_camera():
+    global camera
+    if camera is not None:
+        camera.release()
+    camera = cv2.VideoCapture(0)
+    if not camera.isOpened():
+        raise Exception("无法重新打开摄像头")
+    return camera.isOpened()
+
+@app.route('/restart_camera', methods=['POST'])
+def handle_restart_camera():
+    try:
+        success = restart_camera()
+        if success:
+            return jsonify({"message": "摄像头已重启", "status": "success"})
+        else:
+            return jsonify({"error": "重启摄像头失败", "status": "error"}), 500
+    except Exception as e:
+        return jsonify({"error": str(e), "status": "error"}), 500
+
 if __name__ == "__main__":
     # 确保必要的目录存在
     os.makedirs('static', exist_ok=True)

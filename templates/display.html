@@ -213,9 +213,9 @@
                     <span class="status-indicator status-active"></span>
                     <span>运行中</span>
                 </div>
-                <div class="button-group">
-                    <button>启动摄像头</button>
-                    <button>停止摄像头</button>
+                <div class="controls">
+                    <button onclick="startCapture()" id="startBtn">启动摄像头</button>
+                    <button onclick="stopCapture()" id="stopBtn">停止摄像头</button>
                 </div>
             </div>
 
@@ -255,27 +255,37 @@
     </main>
 
     <script>
-        // 状态变量
-        let cameraInitialized = false;
-        let showSkeleton = true;
-        let lineWidth = 2;
-        let modelSize = 1.0;
+        // 确保DOM加载完成后再执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取按钮元素
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            
+            // 添加点击事件监听器
+            if (startBtn) {
+                startBtn.addEventListener('click', startCapture);
+            }
+            if (stopBtn) {
+                stopBtn.addEventListener('click', stopCapture);
+            }
+        });
 
-        // 更新摄像头状态UI
-        function updateCameraStatus(isActive) {
-            const statusIndicator = document.getElementById('cameraStatus');
-            const statusText = document.getElementById('cameraStatusText');
-            const startButton = document.getElementById('startButton');
-            const stopButton = document.getElementById('stopButton');
-
-            statusIndicator.className = `status-indicator ${isActive ? 'status-active' : 'status-inactive'}`;
-            statusText.textContent = isActive ? '运行中' : '未启动';
-            startButton.disabled = isActive;
-            stopButton.disabled = !isActive;
+        // 更新摄像头状态显示
+        function updateCameraStatus(isRunning) {
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            
+            if (startBtn && stopBtn) {
+                startBtn.disabled = isRunning;
+                stopBtn.disabled = !isRunning;
+            }
+            
+            console.log('摄像头状态:', isRunning ? '运行中' : '已停止');
         }
 
         // 启动摄像头
         async function startCapture() {
+            console.log('尝试启动摄像头...');
             try {
                 const response = await fetch('/start_capture', { 
                     method: 'POST',
@@ -283,41 +293,52 @@
                         'Content-Type': 'application/json'
                     }
                 });
+                
                 const data = await response.json();
+                console.log('服务器响应:', data);
                 
                 if (response.ok) {
                     updateCameraStatus(true);
                     const preview = document.getElementById('preview');
                     preview.style.display = 'block';
-                    // 强制重新加载视频流
                     preview.src = "{{ url_for('video_feed') }}?" + new Date().getTime();
                 } else {
                     throw new Error(data.error || '启动摄像头失败');
                 }
             } catch (error) {
-                console.error('Error:', error);
-                alert(error.message);
+                console.error('启动摄像头错误:', error);
+                alert('启动摄像头失败: ' + error.message);
             }
         }
 
         // 停止摄像头
         async function stopCapture() {
+            console.log('尝试停止摄像头...');
             try {
-                const response = await fetch('/stop_capture', { method: 'POST' });
+                const response = await fetch('/stop_capture', { 
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
                 if (response.ok) {
                     updateCameraStatus(false);
-                    document.getElementById('preview').style.display = 'none';
+                    const preview = document.getElementById('preview');
+                    preview.style.display = 'none';
+                    preview.src = '';
                 } else {
                     throw new Error('停止摄像头失败');
                 }
             } catch (error) {
-                console.error('Error:', error);
-                alert(error.message);
+                console.error('停止摄像头错误:', error);
+                alert('停止摄像头失败: ' + error.message);
             }
         }
 
-        // 初始化页面
+        // 页面加载时初始化
         window.onload = function() {
+            console.log('页面加载完成');
             updateCameraStatus(false);
         };
     </script>
