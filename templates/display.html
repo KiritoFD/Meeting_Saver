@@ -1,33 +1,24 @@
-Meeting_Scene_Saver/display.html
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meeting Scene Saver</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
-    <script src="https://threejs.org/build/three.js"></script>
-    <script src="https://threejs.org/examples/jsm/controls/OrbitControls.js"></script>
-    <script src="https://threejs.org/examples/jsm/loaders/GLTFLoader.js"></script>
     <style>
         body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            background-color: #f0f2f5;
             margin: 0;
             padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: #222;
+            font-family: Arial, sans-serif;
+            background-color: #f1f2f3;
+            min-height: 100vh;
         }
 
         header {
-            background-color: #fff;
-            padding: 15px 20px;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-            width: 100%;
             text-align: center;
+            margin: 0;
+            padding: 12px 0;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
             margin-bottom: 20px;
         }
 
@@ -35,108 +26,132 @@ Meeting_Scene_Saver/display.html
             color: #00aeec;
             margin: 0;
             font-size: 24px;
-            font-weight: bold;
         }
 
         main {
             display: flex;
-            width: 95%;
-            max-width: 1200px;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            gap: 20px;
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 0 20px;
+            height: 100%;
         }
 
         .left-panel {
-            flex: 2;
-            padding-right: 20px;
-            border-right: 1px solid #eee;
+            width: 900px;
+            background: black;
+            border-radius: 6px;
+            overflow: hidden;
+            height: 506px;
+            position: relative;
         }
 
         .right-panel {
-            flex: 1;
-            padding-left: 20px;
+            width: 320px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 12px;
+            height: auto;
+            overflow-y: visible;
+        }
+
+        #preview {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
 
         .controls-group {
-            background-color: #f9f9f9;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #eee;
-            display: flex;
-            flex-direction: column; /* 修改为 column，使标题和内容垂直排列 */
-            gap: 10px;
+            background: white;
+            border-radius: 6px;
+            padding: 16px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
 
-        .controls-group > div {
-            display: flex; /* 内部的 div 使用 flex 使元素在一行显示 */
-            gap: 10px;
-            align-items: center; /* 垂直居中 */
+        .controls-group h3 {
+            margin: 0 0 12px 0;
+            font-size: 15px;
+            color: #18191c;
+            font-weight: 500;
         }
 
+        /* 状态指示器 */
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-active {
+            background-color: #4CAF50;
+        }
+
+        .status-inactive {
+            background-color: #f44336;
+        }
+
+        /* 按钮样式 */
         button {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 5px;
-            background-color: #00aeec;
+            background: #00aeec;
             color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 7px 12px;
             cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s ease;
+            font-size: 13px;
+            transition: background-color 0.2s;
         }
 
         button:hover {
-            background-color: #008abe;
+            background: #0099d3;
         }
 
-        .upload-btn-wrapper {
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
         }
 
-        .upload-btn {
-            border: 2px solid #00aeec;
-            color: #00aeec;
-            background-color: white;
-            padding: 8px 20px;
-            border-radius: 5px;
-            font-size: 16px;
-            font-weight: bold;
+        /* 滑块样式 */
+        .slider-container {
+            margin: 15px 0;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #00aeec;
+            border-radius: 50%;
             cursor: pointer;
-            transition: background-color 0.3s, color 0.3s;
         }
 
-        .upload-btn:hover {
-            background-color: #00aeec;
-            color: white;
+        .slider-value {
+            color: #666;
         }
 
-        .upload-btn-wrapper input[type=file] {
-            font-size: 100px;
-            position: absolute;
-            left: 0;
-            top: 0;
-            opacity: 0;
-        }
-
-        /* 响应式布局 */
-        @media (max-width: 768px) {
-            main {
-                flex-direction: column;
-            }
-            .left-panel {
-                padding-right: 0;
-                border-right: none;
-                margin-bottom: 20px;
-            }
-            .right-panel {
-                padding-left: 0;
-            }
+        /* 按钮组布局 */
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 10px 0;
         }
     </style>
 </head>
@@ -144,205 +159,128 @@ Meeting_Scene_Saver/display.html
     <header>
         <h1>Meeting Scene Saver</h1>
     </header>
+
     <main>
         <div class="left-panel">
-            <div class="video-container">
-                <img id="preview" src="/video_feed" alt="Camera Preview" style="display: none;">
-                <div id="canvas-container"></div>
-            </div>
+            <img id="preview" src="{{ url_for('video_feed') }}" alt="Camera Preview">
         </div>
+
         <div class="right-panel">
             <div class="controls-group">
-                <h3>模型设置</h3>
-                <div >
-                    <div class="upload-btn-wrapper">
-                        <button class="upload-btn">上传模型</button>
-                        <input type="file" id="modelUpload" name="model" accept=".gltf,.glb" style="display: none;">
-                    </div>
-                    <div class="upload-btn-wrapper">
-                        <button class="upload-btn">上传背景</button>
-                        <input type="file" id="backgroundUpload" name="background" accept="image/*" style="display: none;">
-                    </div>
+                <h3>摄像头状态</h3>
+                <div style="margin-bottom: 10px;">
+                    <span class="status-indicator status-active"></span>
+                    <span>运行中</span>
                 </div>
-            </div>
-            <div class="controls-group">
-                <h3>摄像头控制</h3>
                 <div class="button-group">
                     <button onclick="startCapture()">启动摄像头</button>
-                    <button onclick="togglePreview()">显示/隐藏预览</button>
+                    <button onclick="stopCapture()">停止摄像头</button>
+                </div>
+            </div>
+
+            <div class="controls-group">
+                <h3>显示设置</h3>
+                <div class="button-group">
+                    <button onclick="togglePreview()">切换预览</button>
+                    <button onclick="toggleSkeleton()">切换骨骼显示</button>
+                </div>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>骨骼线条粗细</span>
+                        <span class="slider-value">2</span>
+                    </div>
+                    <input type="range" id="lineWidthSlider" min="1" max="10" value="2">
+                </div>
+            </div>
+
+            <div class="controls-group">
+                <h3>模型设置</h3>
+                <button style="width: 100%; margin-bottom: 15px;">上传模型</button>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>模型大小</span>
+                        <span class="slider-value">1.0</span>
+                    </div>
+                    <input type="range" id="modelSizeSlider" min="0.1" max="2" value="1.0" step="0.1">
+                </div>
+            </div>
+
+            <div class="controls-group">
+                <h3>背景设置</h3>
+                <div class="button-group">
+                    <button style="width: 100%;">上传背景</button>
+                    <button style="width: 100%;">移除背景</button>
                 </div>
             </div>
         </div>
     </main>
 
-    <script src="https://threejs.org/build/three.js"></script>
-    <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
     <script>
-        let scene, camera, renderer, controls, skeleton;
+        // 状态变量
         let cameraInitialized = false;
-        //  移除背景上传的事件监听器
+        let showSkeleton = true;
+        let lineWidth = 2;
+        let modelSize = 1.0;
 
-// 新增功能：模型上传 (修改后的)
-document.getElementById('modelUpload').addEventListener('change', async (e) => { //  使用修改后的 id
-    const file = e.target.files[0];
-    if (!file) return;
+        // 更新摄像头状态UI
+        function updateCameraStatus(isActive) {
+            const statusIndicator = document.getElementById('cameraStatus');
+            const statusText = document.getElementById('cameraStatusText');
+            const startButton = document.getElementById('startButton');
+            const stopButton = document.getElementById('stopButton');
 
-    const formData = new FormData();
-    formData.append('model', file); //  确保 FormData 的键与后端一致
-
-    try {
-        const response = await fetch('/upload_model', { //  调用模型上传的后端接口
-            method: 'POST',
-            body: formData
-        });
-        const result = await response.json();
-        if (result.message) {
-            alert('模型上传成功');
-            loadModel(`/static/models/${file.name}`); //  加载上传的模型
-        }
-    } catch (error) {
-        console.error('模型上传失败:', error);
-            }
-        });
-        function init() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, 640 / 480, 0.1, 1000);
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(640, 480);
-            document.getElementById('canvas-container').appendChild(renderer.domElement);
-
-            camera.position.set(0, 1, 5);
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-            scene.add(ambientLight);
-
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-            directionalLight.position.set(5, 5, 5);
-            scene.add(directionalLight);
-
-            skeleton = new THREE.Group();
-            scene.add(skeleton);
+            statusIndicator.className = `status-indicator ${isActive ? 'status-active' : 'status-inactive'}`;
+            statusText.textContent = isActive ? '运行中' : '未启动';
+            startButton.disabled = isActive;
+            stopButton.disabled = !isActive;
         }
 
-        function updateModelWithPose(keypoints) {
-            skeleton.children = [];
-
-            if (keypoints && keypoints.length > 0) {
-                const joints = keypoints.map(kp => new THREE.Vector3(kp[0] - 0.5, 0.5 - kp[1], 0));
-
-                // 连接骨骼 (示例，根据您的 MediaPipe 输出调整)
-                const connections = [
-                    [0, 1], [1, 2], [2, 3], [3, 4], // 示例连接
-                    [5, 6], [6, 7], [7, 8], // 示例连接
-                    [9, 10], [11, 12]  // 更多示例连接
-                ];
-
-                for (const connection of connections) {
-                    const start = joints[connection[0]];
-                    const end = joints[connection[1]];
-                    if (start && end) {
-                        const material = new THREE.LineBasicMaterial({ color: 0x00aeec }); // B站蓝色
-                        const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
-                        const line = new THREE.Line(geometry, material);
-                        skeleton.add(line);
-                    }
-                }
-            }
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-        window.addEventListener('resize', onWindowResize, false);
-
-        // 新增功能：背景上传
-        document.getElementById('backgroundUpload').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const formData = new FormData();
-            formData.append('background', file);
-
-            try {
-                const response = await fetch('/upload_background', {
-                    method: 'POST',
-                    body: formData
-                });
-                const result = await response.json();
-                if (result.message) {
-                    alert('背景上传成功');
-                }
-            } catch (error) {
-                console.error('背景上传失败:', error);
-            }
-        });
-
-        // 开始捕获
+        // 启动摄像头
         async function startCapture() {
             try {
-                const response = await fetch('/start_capture', { method: 'POST' });
-                if (!response.ok) throw new Error('启动捕获失败');
-                console.log('摄像头已启动');
-                cameraInitialized = true;
-                // 摄像头启动后，预览应该自动更新，因为 src 设置为 /video_feed
-            } catch (error) {
-                console.error('启动捕获失败:', error);
-            }
-        }
-
-        // 预览更新
-        let previewInterval;
-        function startPreviewUpdate() {
-            const preview = document.getElementById('preview');
-            preview.style.display = 'block';
-            previewInterval = setInterval(() => {
-                preview.src = `/video_feed?t=${Date.now()}`;
-            }, 100);
-        }
-
-        function togglePreview() {
-            const preview = document.getElementById('preview');
-            if (preview.style.display === 'none'){
-                preview.style.display = 'block';
-                startPreviewUpdate();
-            }
-            else{
-                preview.style.display = 'none';
-                clearInterval(previewInterval);
-            }
-        }
-
-        // 更新渲染循环中的错误处理
-        async function animate() {
-            requestAnimationFrame(animate);
-
-            if (cameraInitialized) {
-                try {
-                    const response = await fetch('/pose');
-                    if (!response.ok) throw new Error('获取姿态数据失败');
-                    const keypoints = await response.json();
-                    updateModelWithPose(keypoints);
-                } catch (error) {
-                    console.error('更新姿态失败:', error);
+                const response = await fetch('/start_capture', { 
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateCameraStatus(true);
+                    const preview = document.getElementById('preview');
+                    preview.style.display = 'block';
+                    // 强制重新加载视频流
+                    preview.src = "{{ url_for('video_feed') }}?" + new Date().getTime();
+                } else {
+                    throw new Error(data.error || '启动摄像头失败');
                 }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message);
             }
-
-            controls.update();
-            renderer.render(scene, camera);
         }
 
-        // 页面加载后初始化
-        window.onload = () => {
-            init();
-            animate();
-        };
+        // 停止摄像头
+        async function stopCapture() {
+            try {
+                const response = await fetch('/stop_capture', { method: 'POST' });
+                if (response.ok) {
+                    updateCameraStatus(false);
+                    document.getElementById('preview').style.display = 'none';
+                } else {
+                    throw new Error('停止摄像头失败');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message);
+            }
+        }
 
-        // 页面关闭时清理资源
+        // 初始化页面
+        window.onload = function() {
+            updateCameraStatus(false);
+        };
     </script>
 </body>
 </html>

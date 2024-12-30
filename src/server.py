@@ -1,159 +1,159 @@
-from flask import Flask, render_template, request, jsonify, send_file, Response
-from flask_cors import CORS
-import logging
-import os
+from flask import Flask, Response, jsonify, request, send_from_directory, render_template
 import cv2
 import numpy as np
-import io
-import time
-import threading
-from .core.capture import process_frame_with_mediapipe
+import mediapipe as mp
+import os
+from werkzeug.utils import secure_filename
 
-# Configure logging
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+# 获取项目根目录的绝对路径
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+template_dir = os.path.join(project_root, 'templates')
+static_dir = os.path.join(project_root, 'static')
 
-def create_app():
-    template_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'templates')
-    app = Flask(__name__, template_folder=template_folder, static_folder='static')
-    CORS(app)
-    app.config['UPLOAD_FOLDER'] = 'uploads/'
-    app.config['BACKGROUND_FILE'] = 'uploads/background.jpg'
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+app = Flask(__name__, 
+           template_folder=template_dir,
+           static_folder=static_dir)
 
-    # 全局变量
-    app.config['cap'] = None
-    app.config['background_image'] = None
-    app.config['frame_lock'] = threading.Lock()  # 帧锁
+# 配置上传文件的存储路径
+UPLOAD_FOLDER = 'uploads'
+MODEL_FOLDER = os.path.join('static', 'models')
+BACKGROUND_FOLDER = os.path.join('static', 'backgrounds')
+ALLOWED_EXTENSIONS = {'gltf', 'glb', 'png', 'jpg', 'jpeg'}
 
-    return app
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max-limit
 
-app = create_app()
+# 确保必要的目录存在
+for folder in [UPLOAD_FOLDER, MODEL_FOLDER, BACKGROUND_FOLDER]:
+    os.makedirs(folder, exist_ok=True)
 
-def initialize_camera():
-    logger.info("Initializing camera...")
-    with app.config['frame_lock']:
-        if app.config['cap'] is None:
-            cap = cv2.VideoCapture(0)
-            if not cap.isOpened():
-                logger.error("无法打开摄像头")
-                return False
-            else:
-                # 摄像头成功打开，读取一帧来测试
-                ret, frame = cap.read()
-                if not ret:
-                    logger.error("无法从摄像头读取帧")
-                    cap.release()
-                    return False
-                
-                cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-                app.config['cap'] = cap
-                logger.info("Camera initialized successfully.")
-                return True
-        else:
-            logger.info("Camera already initialized.")
-            return True
+# MediaPipe 初始化
+mp_pose = mp.solutions.pose
+pose = mp_pose.Pose(
+    static_image_mode=False,
+    model_complexity=2,
+    min_detection_confidence=0.5,
+    min_tracking_confidence=0.5
+)
 
-def release_camera():
-    logger.info("Releasing camera...")
-    with app.config['frame_lock']:
-        if app.config['cap'] is not None:
-            app.config['cap'].release()
-            app.config['cap'] = None
-            logger.info("Camera released successfully.")
+# 全局变量
+camera = None
+current_frame = None
+current_pose = None
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/start_capture', methods=['POST'])
+def start_capture():
+    global camera
+    try:
+        if camera is None:
+            camera = cv2.VideoCapture(0)
+            if not camera.isOpened():
+                raise Exception("无法打开摄像头")
+        return jsonify({"message": "摄像头已启动"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/stop_capture', methods=['POST'])
+def stop_capture():
+    global camera
+    try:
+        if camera is not None:
+            camera.release()
+            camera = None
+        return jsonify({"message": "摄像头已关闭"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 def generate_frames():
-    logger.info("Starting frame generation...")
+    global current_frame, current_pose
     while True:
-        with app.config['frame_lock']:
-            if app.config['cap'] is None:
-                logger.error("Camera is not initialized.")
-                time.sleep(1)
-                continue
-
-            ret, frame = app.config['cap'].read()
-            if not ret:
-                logger.error("无法读取摄像头帧")
-                release_camera()
-                time.sleep(1)
-                continue
-
-            # 使用 capture.py 中的函数处理帧
-            processed_frame, _ = process_frame_with_mediapipe(frame)
-
-            if app.config['background_image'] is not None:
-                try:
-                    processed_frame = np.where(app.config['background_image'] is not None, app.config['background_image'], processed_frame)
-                except Exception as e:
-                    logger.error(f"背景处理错误: {str(e)}")
-
-            try:
-                _, buffer = cv2.imencode('.jpg', processed_frame)
-                frame = buffer.tobytes()
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-            except Exception as e:
-                logger.error(f"帧编码错误: {str(e)}")
-                break
-
-@app.route("/", methods=["GET"])
-def index():
-    logger.info("访问主页")
-    return render_template('display.html')
-
-@app.route("/start_capture", methods=["POST"])
-def start_capture():
-    if initialize_camera():
-        return jsonify({"message": "Camera initialized"})
-    else:
-        return jsonify({"error": "Failed to initialize camera"}), 500
-
-@app.route("/upload_background", methods=["POST"])
-def upload_background():
-    if 'background' not in request.files:
-        return jsonify({"error": "No file part"}), 400
-
-    file = request.files['background']
-    if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
-
-    try:
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'background.jpg')
-        file.save(filepath)
-        app.config['background_image'] = cv2.imread(filepath)
-        return jsonify({"message": "Background uploaded successfully"}), 200
-    except Exception as e:
-        logger.error(f"背景上传错误: {str(e)}")
-        return jsonify({"error": "Failed to save background"}), 500
+        if camera is None or not camera.isOpened():
+            break
+            
+        success, frame = camera.read()
+        if not success:
+            break
+            
+        # 处理帧
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = pose.process(frame_rgb)
+        
+        # 存储当前姿态数据
+        if results.pose_landmarks:
+            current_pose = [[lm.x, lm.y, lm.z] for lm in results.pose_landmarks.landmark]
+            
+        # 绘制姿态标记点
+        if results.pose_landmarks:
+            for landmark in results.pose_landmarks.landmark:
+                h, w, c = frame.shape
+                cx, cy = int(landmark.x * w), int(landmark.y * h)
+                cv2.circle(frame, (cx, cy), 5, (0, 255, 0), -1)
+                
+        current_frame = frame
+        
+        # 转换帧格式用于流式传输
+        ret, buffer = cv2.imencode('.jpg', frame)
+        frame = buffer.tobytes()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 @app.route('/video_feed')
 def video_feed():
-    if app.config['cap'] is None:
-        initialize_camera()
-    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(generate_frames(),
+                   mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/pose')
 def get_pose():
-    with app.config['frame_lock']:
-        if app.config['cap'] is None:
-            logger.error("Camera is not initialized.")
-            return jsonify({"error": "Camera not initialized"}), 500
+    if current_pose is None:
+        return jsonify([])
+    return jsonify(current_pose)
 
-        ret, frame = app.config['cap'].read()
-        if not ret:
-            logger.error("无法读取摄像头帧")
-            release_camera()
-            return jsonify({"error": "Failed to read frame"}), 500
+@app.route('/upload_model', methods=['POST'])
+def upload_model():
+    if 'model' not in request.files:
+        return jsonify({"error": "没有上传文件"}), 400
+        
+    file = request.files['model']
+    if file.filename == '':
+        return jsonify({"error": "没有选择文件"}), 400
+        
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(MODEL_FOLDER, filename))
+        return jsonify({"message": "模型上传成功", "filename": filename}), 200
+    
+    return jsonify({"error": "不支持的文件类型"}), 400
 
-        _, keypoints = process_frame_with_mediapipe(frame)
-        return jsonify(keypoints)
+@app.route('/upload_background', methods=['POST'])
+def upload_background():
+    if 'background' not in request.files:
+        return jsonify({"error": "没有上传文件"}), 400
+        
+    file = request.files['background']
+    if file.filename == '':
+        return jsonify({"error": "没有选择文件"}), 400
+        
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(BACKGROUND_FOLDER, filename))
+        return jsonify({"message": "背景上传成功", "filename": filename}), 200
+    
+    return jsonify({"error": "不支持的文件类型"}), 400
 
-@app.teardown_appcontext
-def teardown_appcontext(error):
-    release_camera()
+@app.route('/models/<path:filename>')
+def serve_model(filename):
+    return send_from_directory(MODEL_FOLDER, filename)
+
+@app.route('/backgrounds/<path:filename>')
+def serve_background(filename):
+    return send_from_directory(BACKGROUND_FOLDER, filename)
+
+@app.route('/')
+def index():
+    return render_template('display.html')
+
+if __name__ == '__main__':
+    app.run(debug=True)
