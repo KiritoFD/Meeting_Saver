@@ -9,93 +9,82 @@
             margin: 0;
             padding: 0;
             font-family: Arial, sans-serif;
-            background-color: #f1f2f3;
+            background-color: #f5f5f5;
             min-height: 100vh;
         }
 
         header {
             text-align: center;
-            margin: 0;
-            padding: 12px 0;
+            margin-bottom: 24px;
+            border-bottom: 1px solid #e3e5e7;
+            padding: 16px 0;
             background: #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-            margin-bottom: 20px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
 
         h1 {
             color: #00aeec;
             margin: 0;
-            font-size: 24px;
+            font-size: 26px;
         }
 
         main {
             display: flex;
-            gap: 20px;
-            max-width: 1300px;
+            gap: 50px;
+            max-width: 1500px;
             margin: 0 auto;
-            padding: 0 20px;
-            height: 100%;
-            align-items: flex-start;
+            padding: 0 50px;
         }
 
         .left-panel {
-            width: 900px;
+            flex: 1;
             background: black;
-            border-radius: 6px;
+            border-radius: 12px;
             overflow: hidden;
-            height: 685px;
+            height: 800px;
             position: relative;
-            margin-bottom: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .right-panel {
-            width: 400px;
+            width: 380px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
-            height: 660px;
-            overflow-y: visible;
+            gap: 24px;
         }
 
         #preview {
             width: 100%;
             height: 100%;
-            object-fit: cover;
-            display: block;
+            object-fit: contain;
         }
 
         .controls-group {
             background: white;
-            border-radius: 6px;
-            padding: 16px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
         .controls-group h3 {
-            margin: 0 0 12px 0;
+            color: #00aeec;
             font-size: 15px;
-            color: #18191c;
-            font-weight: 500;
+            margin: 0 0 16px 0;
+            font-weight: normal;
         }
 
         /* 状态指示器 */
         .status-indicator {
             display: inline-block;
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             margin-right: 5px;
+            vertical-align: middle;
         }
 
         .status-active {
             background-color: #4CAF50;
-        }
-
-        .status-inactive {
-            background-color: #f44336;
         }
 
         /* 按钮样式 */
@@ -103,25 +92,63 @@
             background: #00aeec;
             color: white;
             border: none;
-            border-radius: 4px;
-            padding: 7px 12px;
+            border-radius: 6px;
+            padding: 8px 20px;
             cursor: pointer;
-            font-size: 13px;
-            transition: background-color 0.2s;
+            font-size: 14px;
+            height: 36px;
+            line-height: 20px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        button.full-width {
+            width: 100%;
+        }
+
+        button.outline {
+            background: white;
+            color: #00aeec;
+            border: 1px solid #00aeec;
+        }
+
+        button.outline:hover {
+            background: #f6fdff;
+            border-color: #33bef0;
+            color: #33bef0;
+            box-shadow: 0 2px 8px rgba(0,174,236,0.15);
         }
 
         button:hover {
-            background: #0099d3;
+            background: #33bef0;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,174,236,0.3);
         }
 
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 12px 0;
+        }
+
+        .single-button {
+            width: auto;
+            min-width: unset;
+            display: inline-block;
+            margin-right: 16px;
+        }
+
+        .single-button-container {
+            margin-bottom: 20px;
         }
 
         /* 滑块样式 */
         .slider-container {
-            margin: 15px 0;
+            margin: 16px 0;
+            background: #f5f5f5;
+            border-radius: 6px;
+            padding: 16px;
         }
 
         .slider-label {
@@ -129,35 +156,43 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 8px;
+            color: #666;
+            font-size: 13px;
         }
 
         input[type="range"] {
             width: 100%;
             -webkit-appearance: none;
-            height: 4px;
+            height: 3px;
             background: #e0e0e0;
-            border-radius: 2px;
+            border-radius: 3px;
+            margin: 12px 0;
         }
 
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
+            width: 14px;
+            height: 14px;
             background: #00aeec;
             border-radius: 50%;
             cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
-        .slider-value {
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        .value-display {
+            float: right;
             color: #666;
         }
 
-        /* 按钮组布局 */
-        .button-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin: 10px 0;
+        .status-text {
+            font-size: 13px;
+            color: #666;
+            vertical-align: middle;
         }
     </style>
 </head>
@@ -179,21 +214,21 @@
                     <span>运行中</span>
                 </div>
                 <div class="button-group">
-                    <button onclick="startCapture()">启动摄像头</button>
-                    <button onclick="stopCapture()">停止摄像头</button>
+                    <button>启动摄像头</button>
+                    <button>停止摄像头</button>
                 </div>
             </div>
 
             <div class="controls-group">
                 <h3>显示设置</h3>
                 <div class="button-group">
-                    <button onclick="togglePreview()">切换预览</button>
-                    <button onclick="toggleSkeleton()">切换骨骼显示</button>
+                    <button>切换预览</button>
+                    <button>切换骨骼显示</button>
                 </div>
                 <div class="slider-container">
                     <div class="slider-label">
                         <span>骨骼线条粗细</span>
-                        <span class="slider-value">2</span>
+                        <span>2</span>
                     </div>
                     <input type="range" id="lineWidthSlider" min="1" max="10" value="2">
                 </div>
@@ -201,11 +236,11 @@
 
             <div class="controls-group">
                 <h3>模型设置</h3>
-                <button style="width: 100%; margin-bottom: 15px;">上传模型</button>
+                <button class="outline" style="margin-bottom: 12px;">上传模型</button>
                 <div class="slider-container">
                     <div class="slider-label">
                         <span>模型大小</span>
-                        <span class="slider-value">1.0</span>
+                        <span>1.0</span>
                     </div>
                     <input type="range" id="modelSizeSlider" min="0.1" max="2" value="1.0" step="0.1">
                 </div>
@@ -213,10 +248,8 @@
 
             <div class="controls-group">
                 <h3>背景设置</h3>
-                <div class="button-group">
-                    <button style="width: 100%;">上传背景</button>
-                    <button style="width: 100%;">移除背景</button>
-                </div>
+                <button class="outline" style="margin-bottom: 12px;">上传背景</button>
+                <button>移除背景</button>
             </div>
         </div>
     </main>
