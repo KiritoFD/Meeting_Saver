@@ -8,7 +8,6 @@ export interface PreviewConfig {
   height: number;
   format: number;
   frameRate: number;
-  surfaceId?: string;
 }
 
 export interface CameraInfo {
@@ -21,9 +20,6 @@ export interface CameraSession {
   start(): Promise<void>;
   stop(): Promise<void>;
   release(): Promise<void>;
-  capture(): Promise<void>;
-  resume(): Promise<void>;
-  pause(): Promise<void>;
 }
 
 export interface CameraInput {
@@ -31,9 +27,6 @@ export interface CameraInput {
   close(): Promise<void>;
   createPreviewSession(config: PreviewConfig): Promise<CameraSession>;
   release(): Promise<void>;
-  getSupportedPreviewFormats(): Promise<number[]>;
-  getSupportedPhotoFormats(): Promise<number[]>;
-  getSupportedVideoFormats(): Promise<number[]>;
 }
 
 export interface CameraManager {

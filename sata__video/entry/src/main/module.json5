@@ -37,7 +37,7 @@
     "requestPermissions": [
       {
         "name": "ohos.permission.CAMERA",
-        "reason": "需要使用相机进行视频采集",
+        "reason": "$string:camera_reason",
         "usedScene": {
           "abilities": ["EntryAbility"],
           "when": "inuse"
@@ -45,7 +45,7 @@
       },
       {
         "name": "ohos.permission.DISTRIBUTED_DATASYNC",
-        "reason": "需要进行分布式数据同步",
+        "reason": "$string:distributed_reason",
         "usedScene": {
           "abilities": ["EntryAbility"],
           "when": "always"
@@ -53,7 +53,7 @@
       },
       {
         "name": "ohos.permission.MEDIA_LOCATION",
-        "reason": "需要访问媒体位置信息",
+        "reason": "$string:media_location_reason",
         "usedScene": {
           "abilities": ["EntryAbility"],
           "when": "inuse"

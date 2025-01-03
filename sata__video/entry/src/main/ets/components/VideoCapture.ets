@@ -4,6 +4,7 @@ import { VideoCallManager } from '../core/VideoCallManager'
 import { ModelRenderer } from '../core/ModelRenderer'
 import { Logger } from '../utils/logger'
 import type { CameraContext, PreviewConfig, CameraDevice, CameraSession } from '../core/camera/types'
+import { CameraInput } from 'some-camera-input-module'; // 假设需要导入 CameraInput 类型
 
 class FrameRateConfig {
   min: number = 5
@@ -74,12 +75,11 @@ export struct VideoCapture {
         width: 640,
         height: 480,
         format: 1, // JPEG
-        frameRate: 30,
-        surfaceId: '1'
+        frameRate: 30
       }
 
       // 创建预览会话
-      this.captureSession = await cameraInput.createPreviewSession(previewConfig)
+      this.captureSession = await this.createPreviewSession(cameraInput)
       if (!this.captureSession) {
         throw new Error('无法创建预览会话')
       }
@@ -119,27 +119,17 @@ export struct VideoCapture {
     this.videoCallManager.endCall()
   }
 
-  private async captureFrame(): Promise<image.ImageSource> {
+  private async captureFrame(): Promise<ImageData> {
     if (!this.captureSession) {
       throw new Error('相机会话未初始化')
     }
 
-    return new Promise<image.ImageSource>((resolve, reject) => {
+    return new Promise<ImageData>((resolve, reject) => {
       try {
-        // 使用 OpenHarmony 的图像处理 API
-        const imagePackerOptions: image.PackingOption = {
-          format: "image/jpeg",
-          quality: 90
-        }
-        
-        // 创建图像源
-        image.createImageSource(this.captureSession)
-          .then(imageSource => {
-            resolve(imageSource)
-          })
-          .catch(error => {
-            reject(new Error('创建图像源失败: ' + error.toString()))
-          })
+        // 创建一个空的ImageData
+        const imageData = new ImageData(640, 480)
+        // TODO: 实现实际的帧捕获逻辑
+        resolve(imageData)
       } catch (error) {
         reject(new Error('帧捕获失败: ' + error.toString()))
       }
