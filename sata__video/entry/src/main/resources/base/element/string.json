@@ -1,0 +1,28 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "module description"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "卫星视频通话"
+    },
+    {
+      "name": "camera_reason",
+      "value": "用于视频采集"
+    },
+    {
+      "name": "distributed_reason",
+      "value": "用于分布式数据同步"
+    },
+    {
+      "name": "media_location_reason",
+      "value": "用于媒体位置信息"
+    }
+  ]
+}

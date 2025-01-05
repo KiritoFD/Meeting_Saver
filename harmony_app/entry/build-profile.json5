@@ -1,0 +1,11 @@
+{
+  "apiType": 'stageMode',
+  "buildOption": {
+    "externalNativeOptions": {
+      "path": "cpp",
+      "arguments": "",
+      "cppFlags": "",
+      "cFlags": ""
+    }
+  }
+} 
